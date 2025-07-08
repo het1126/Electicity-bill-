@@ -1,233 +1,309 @@
 import streamlit as st
 import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime
+import pandas as pd
 
-# Set page config
+# Page configuration
 st.set_page_config(
-    page_title="Home Energy Calculator",
+    page_title="Energy Consumption Calculator",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS for professional styling
 st.markdown("""
 <style>
     .main-header {
         text-align: center;
         color: #2E86AB;
-        padding: 1rem 0;
-        border-bottom: 3px solid #A23B72;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+    }
+    
+    .sub-header {
+        text-align: center;
+        color: #A23B72;
+        font-size: 1.2rem;
         margin-bottom: 2rem;
     }
-    .info-box {
+    
+    .metric-container {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-    }
-    .energy-result {
-        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-        color: white;
-        padding: 2rem;
+        padding: 20px;
         border-radius: 15px;
+        color: white;
         text-align: center;
-        font-size: 24px;
-        font-weight: bold;
-        margin: 2rem 0;
+        margin: 10px 0;
     }
-    .section-header {
-        color: #2E86AB;
-        border-bottom: 2px solid #F18F01;
-        padding-bottom: 0.5rem;
-        margin: 1.5rem 0 1rem 0;
+    
+    .info-box {
+        background: #f8f9fa;
+        border-left: 4px solid #2E86AB;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    
+    .stSelectbox > div > div {
+        background-color: #f0f2f6;
+    }
+    
+    .stTextInput > div > div > input {
+        background-color: #f0f2f6;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Main header
-st.markdown('<h1 class="main-header">⚡ Home Energy Calculator</h1>', unsafe_allow_html=True)
+# Header
+st.markdown('<h1 class="main-header">⚡ Energy Consumption Calculator</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-header">Calculate your household energy consumption and get insights</p>', unsafe_allow_html=True)
 
-# Info box
-st.markdown("""
-<div class="info-box">
-    <h3>🏠 Calculate Your Home's Energy Consumption</h3>
-    <p>This calculator helps you estimate your home's energy usage based on your living space and appliances.</p>
-</div>
-""", unsafe_allow_html=True)
+# Sidebar for user inputs
+st.sidebar.header("📋 Personal Information")
+name = st.sidebar.text_input("Your Name", placeholder="Enter your full name")
+age = st.sidebar.number_input("Your Age", min_value=1, max_value=100, value=25)
+city = st.sidebar.text_input("City", placeholder="Enter your city")
+area = st.sidebar.text_input("Area/Locality", placeholder="Enter your area name")
 
-# Create two columns for better layout
-col1, col2 = st.columns([1, 1])
+st.sidebar.header("🏠 Housing Details")
+flat_tenament = st.sidebar.selectbox(
+    "Housing Type",
+    ["Flat", "Tenement", "Independent House", "Villa"]
+)
 
-with col1:
-    st.markdown('<h2 class="section-header">👤 Personal Information</h2>', unsafe_allow_html=True)
+facility = st.sidebar.selectbox(
+    "House Configuration",
+    ["1BHK", "2BHK", "3BHK", "4BHK+"]
+)
+
+st.sidebar.header("🔌 Appliances")
+ac = st.sidebar.radio("Air Conditioning", ["Yes", "No"])
+fridge = st.sidebar.radio("Refrigerator", ["Yes", "No"])
+washing_machine = st.sidebar.radio("Washing Machine", ["Yes", "No"])
+tv = st.sidebar.radio("Television", ["Yes", "No"])
+microwave = st.sidebar.radio("Microwave", ["Yes", "No"])
+
+# Calculate energy consumption
+def calculate_energy():
+    cal_energy = 0
     
-    # Personal details
-    name = st.text_input("📝 Enter your name:", placeholder="e.g., John Doe")
-    age = st.number_input("🎂 Enter your age:", min_value=1, max_value=120, value=25)
-    city = st.text_input("🏙️ Enter your city:", placeholder="e.g., Mumbai")
-    area = st.text_input("📍 Enter your area name:", placeholder="e.g., Bandra West")
-
-with col2:
-    st.markdown('<h2 class="section-header">🏠 Housing Details</h2>', unsafe_allow_html=True)
+    # Base consumption based on BHK
+    if facility == "1BHK":
+        cal_energy += 2 * 0.4 + 2 * 0.8  # 2.4 kWh
+    elif facility == "2BHK":
+        cal_energy += 3 * 0.4 + 3 * 0.8  # 3.6 kWh
+    elif facility == "3BHK":
+        cal_energy += 4 * 0.4 + 4 * 0.8  # 4.8 kWh
+    elif facility == "4BHK+":
+        cal_energy += 5 * 0.4 + 5 * 0.8  # 6.0 kWh
     
-    # Housing details
-    flat_tenement = st.selectbox(
-        "🏢 Are you living in Flat or Tenement?",
-        ["Select Option", "Flat", "Tenement"]
-    )
+    # Appliance consumption
+    appliances = {
+        'Air Conditioning': 3.0 if ac == "Yes" else 0,
+        'Refrigerator': 1.5 if fridge == "Yes" else 0,
+        'Washing Machine': 2.0 if washing_machine == "Yes" else 0,
+        'Television': 0.8 if tv == "Yes" else 0,
+        'Microwave': 1.2 if microwave == "Yes" else 0
+    }
     
-    facility = st.selectbox(
-        "🏘️ What type of accommodation?",
-        ["Select Option", "1BHK", "2BHK", "3BHK"]
-    )
+    for appliance, consumption in appliances.items():
+        cal_energy += consumption
+    
+    return cal_energy, appliances
 
-# Appliances section
-st.markdown('<h2 class="section-header">🔌 Appliances</h2>', unsafe_allow_html=True)
-
-col3, col4, col5 = st.columns(3)
-
-with col3:
-    st.markdown("### ❄️ Air Conditioner")
-    ac = st.radio(
-        "Are you using AC?",
-        ["No", "Yes"],
-        key="ac"
-    )
-
-with col4:
-    st.markdown("### 🧊 Refrigerator")
-    fridge = st.radio(
-        "Are you using Fridge?",
-        ["No", "Yes"],
-        key="fridge"
-    )
-
-with col5:
-    st.markdown("### 🧺 Washing Machine")
-    wm = st.radio(
-        "Are you using Washing Machine?",
-        ["No", "Yes"],
-        key="wm"
-    )
-
-# Calculate button
-if st.button("🔄 Calculate Energy Consumption", type="primary"):
-    if name and city and area and flat_tenement != "Select Option" and facility != "Select Option":
-        # Calculate energy
-        cal_energy = 0
+# Main content area
+if name and city and area:
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.subheader("📊 Energy Consumption Analysis")
         
-        # Base energy calculation based on facility type
-        if facility.lower() == "1bhk":
-            cal_energy += 2 * 0.4 + 2 * 0.8  # 2.4 kWh
-        elif facility.lower() == "2bhk":
-            cal_energy += 3 * 0.4 + 3 * 0.8  # 3.6 kWh
-        elif facility.lower() == "3bhk":
-            cal_energy += 4 * 0.4 + 4 * 0.8  # 4.8 kWh
+        total_energy, appliances = calculate_energy()
         
-        # Add appliance energy consumption
-        if ac == "Yes":
-            cal_energy += 3
-        if fridge == "Yes":
-            cal_energy += 3
-        if wm == "Yes":
-            cal_energy += 3
+        # Create breakdown data
+        breakdown_data = {
+            'Category': ['Base Consumption', 'Air Conditioning', 'Refrigerator', 
+                        'Washing Machine', 'Television', 'Microwave'],
+            'Consumption (kWh)': [
+                2.4 if facility == "1BHK" else 3.6 if facility == "2BHK" else 4.8 if facility == "3BHK" else 6.0,
+                appliances['Air Conditioning'],
+                appliances['Refrigerator'],
+                appliances['Washing Machine'],
+                appliances['Television'],
+                appliances['Microwave']
+            ]
+        }
         
-        # Display results
+        # Filter out zero consumption items
+        df = pd.DataFrame(breakdown_data)
+        df = df[df['Consumption (kWh)'] > 0]
+        
+        # Create pie chart
+        fig_pie = px.pie(
+            df, 
+            values='Consumption (kWh)', 
+            names='Category',
+            title="Energy Consumption Breakdown",
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        fig_pie.update_layout(
+            font=dict(size=12),
+            title_font_size=16,
+            showlegend=True
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+        
+        # Create bar chart
+        fig_bar = px.bar(
+            df,
+            x='Category',
+            y='Consumption (kWh)',
+            title="Daily Energy Consumption by Category",
+            color='Consumption (kWh)',
+            color_continuous_scale='viridis'
+        )
+        fig_bar.update_layout(
+            xaxis_title="Category",
+            yaxis_title="Consumption (kWh)",
+            title_font_size=16
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
+        
+        # Monthly projection
+        monthly_consumption = total_energy * 30
+        monthly_cost = monthly_consumption * 5  # Assuming ₹5 per kWh
+        
+        st.subheader("📅 Monthly Projections")
+        
+        months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        
+        # Simulate seasonal variation
+        seasonal_multiplier = [0.8, 0.9, 1.0, 1.2, 1.4, 1.5, 1.6, 1.5, 1.3, 1.1, 0.9, 0.8]
+        monthly_data = [monthly_consumption * mult for mult in seasonal_multiplier]
+        
+        fig_line = go.Figure()
+        fig_line.add_trace(go.Scatter(
+            x=months,
+            y=monthly_data,
+            mode='lines+markers',
+            name='Monthly Consumption',
+            line=dict(color='#2E86AB', width=3),
+            marker=dict(size=8)
+        ))
+        
+        fig_line.update_layout(
+            title="Projected Monthly Energy Consumption",
+            xaxis_title="Month",
+            yaxis_title="Consumption (kWh)",
+            title_font_size=16,
+            hovermode='x unified'
+        )
+        st.plotly_chart(fig_line, use_container_width=True)
+    
+    with col2:
+        st.subheader("📈 Summary")
+        
+        # Display metrics
         st.markdown(f"""
-        <div class="energy-result">
-            🎯 Total Energy Consumption: {cal_energy:.1f} kWh/day
+        <div class="metric-container">
+            <h3>Daily Consumption</h3>
+            <h2>{total_energy:.1f} kWh</h2>
         </div>
         """, unsafe_allow_html=True)
         
-        # Create energy breakdown
-        st.markdown('<h2 class="section-header">📊 Energy Breakdown</h2>', unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-container">
+            <h3>Monthly Consumption</h3>
+            <h2>{monthly_consumption:.0f} kWh</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
-        # Calculate breakdown
-        base_energy = cal_energy - (3 if ac == "Yes" else 0) - (3 if fridge == "Yes" else 0) - (3 if wm == "Yes" else 0)
+        st.markdown(f"""
+        <div class="metric-container">
+            <h3>Estimated Monthly Cost</h3>
+            <h2>₹{monthly_cost:.0f}</h2>
+        </div>
+        """, unsafe_allow_html=True)
         
-        categories = []
-        values = []
+        # User profile
+        st.subheader("👤 Your Profile")
+        st.markdown(f"""
+        <div class="info-box">
+            <strong>Name:</strong> {name}<br>
+            <strong>Age:</strong> {age}<br>
+            <strong>Location:</strong> {area}, {city}<br>
+            <strong>Housing:</strong> {facility} {flat_tenament}<br>
+            <strong>Appliances:</strong> {sum(1 for app in [ac, fridge, washing_machine, tv, microwave] if app == "Yes")} active
+        </div>
+        """, unsafe_allow_html=True)
         
-        if base_energy > 0:
-            categories.append(f"Base ({facility})")
-            values.append(base_energy)
-        
-        if ac == "Yes":
-            categories.append("Air Conditioner")
-            values.append(3)
-        
-        if fridge == "Yes":
-            categories.append("Refrigerator")
-            values.append(3)
-        
-        if wm == "Yes":
-            categories.append("Washing Machine")
-            values.append(3)
-        
-        # Create pie chart
-        fig = go.Figure(data=[go.Pie(
-            labels=categories,
-            values=values,
-            hole=0.3,
-            marker_colors=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
-        )])
-        
-        fig.update_layout(
-            title="Energy Consumption Breakdown (kWh/day)",
-            font=dict(size=14),
-            showlegend=True
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
-        
-        # Additional information
-        col6, col7, col8 = st.columns(3)
-        
-        with col6:
-            st.metric("📅 Daily Consumption", f"{cal_energy:.1f} kWh")
-        
-        with col7:
-            st.metric("📅 Monthly Consumption", f"{cal_energy * 30:.1f} kWh")
-        
-        with col8:
-            st.metric("📅 Yearly Consumption", f"{cal_energy * 365:.1f} kWh")
-        
-        # User summary
-        st.markdown('<h2 class="section-header">📋 Summary</h2>', unsafe_allow_html=True)
-        
-        st.info(f"""
-        **User Details:**
-        - Name: {name}
-        - Age: {age} years
-        - Location: {area}, {city}
-        - Housing: {facility} {flat_tenement}
-        - Appliances: {', '.join([app for app, status in [('AC', ac), ('Fridge', fridge), ('Washing Machine', wm)] if status == 'Yes']) or 'None'}
-        """)
-        
-        # Energy saving tips
-        st.markdown('<h2 class="section-header">💡 Energy Saving Tips</h2>', unsafe_allow_html=True)
+        # Energy efficiency tips
+        st.subheader("💡 Energy Saving Tips")
         
         tips = [
-            "🌡️ Set AC temperature to 24°C or higher",
-            "💡 Use LED bulbs instead of incandescent ones",
-            "🔌 Unplug electronics when not in use",
-            "🚿 Use cold water for washing clothes when possible",
-            "🌞 Use natural light during the day",
-            "⚡ Regular maintenance of appliances improves efficiency"
+            "Use LED bulbs instead of incandescent",
+            "Set AC temperature to 24°C for optimal efficiency",
+            "Unplug devices when not in use",
+            "Use natural light during daytime",
+            "Regular maintenance of appliances",
+            "Use timer for water heater"
         ]
         
         for tip in tips:
-            st.write(f"• {tip}")
+            st.markdown(f"• {tip}")
+        
+        # Environmental impact
+        st.subheader("🌱 Environmental Impact")
+        co2_emission = monthly_consumption * 0.82  # kg CO2 per kWh
+        st.markdown(f"""
+        <div class="info-box">
+            <strong>Monthly CO₂ Emission:</strong><br>
+            {co2_emission:.1f} kg CO₂
+        </div>
+        """, unsafe_allow_html=True)
+
+else:
+    st.warning("👆 Please fill in your personal information in the sidebar to see your energy consumption analysis.")
     
-    else:
-        st.error("⚠️ Please fill in all required fields before calculating!")
+    # Show sample visualization
+    st.subheader("📊 Sample Energy Consumption Dashboard")
+    
+    # Sample data
+    sample_data = {
+        'Category': ['Base Consumption', 'Air Conditioning', 'Refrigerator', 'Washing Machine'],
+        'Consumption (kWh)': [3.6, 3.0, 1.5, 2.0]
+    }
+    
+    df_sample = pd.DataFrame(sample_data)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        fig_sample_pie = px.pie(
+            df_sample, 
+            values='Consumption (kWh)', 
+            names='Category',
+            title="Sample Energy Breakdown"
+        )
+        st.plotly_chart(fig_sample_pie, use_container_width=True)
+    
+    with col2:
+        fig_sample_bar = px.bar(
+            df_sample,
+            x='Category',
+            y='Consumption (kWh)',
+            title="Sample Daily Consumption"
+        )
+        st.plotly_chart(fig_sample_bar, use_container_width=True)
 
 # Footer
 st.markdown("---")
-st.markdown("""
-<div style="text-align: center; color: #666; padding: 1rem;">
-    <p>🌱 Energy Calculator v1.0 | Built with Streamlit</p>
-    <p>💡 Make your home more energy efficient!</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(
+    "<p style='text-align: center; color: #666;'>Energy Consumption Calculator | "
+    f"Generated on {datetime.now().strftime('%B %d, %Y')}</p>",
+    unsafe_allow_html=True
+)
